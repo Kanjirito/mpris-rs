@@ -84,6 +84,7 @@ impl PlayerFinder {
     /// only one of the players are currently playing something.
     ///
     /// This method will try to determine which player a user is most likely to use.
+    /// If you want to find a specific player by name check out [`find_with_name`](Self::find_with_name)
     ///
     /// **NOTE:** Currently this method is very naive and just returns the first player. This
     /// behavior can change later without a major version change, so don't rely on that behavior.
@@ -98,6 +99,55 @@ impl PlayerFinder {
             .map_err(FindingError::from)
         } else {
             Err(FindingError::NoPlayerFound)
+        }
+    }
+
+    /// Find a player by it's MPRIS [`Identity`](https://specifications.freedesktop.org/mpris-spec/latest/Media_Player.html#Property:Identity)
+    /// (case insensitive).
+    ///
+    /// If you want to just find any active player use [`find_active`](Self::find_active)
+    pub fn find_with_name<'b>(&self, name: &str) -> Result<Player<'b>, FindingError> {
+        let players = self.find_all()?;
+        for player in players {
+            if player.identity().to_lowercase() == name.to_lowercase() {
+                return Ok(player);
+            }
+        }
+        return Err(FindingError::NoPlayerFound);
+    }
+
+    /// Same as [`find_active`](Self::find_active) but blocks until a [`Player`] is found or [`DBusError`] happens.
+    pub fn wait_for_player<'b>(&self) -> Result<Player<'b>, DBusError> {
+        match self.find_active() {
+            Ok(player) => return Ok(player),
+            Err(FindingError::DBusError(err)) => return Err(err),
+            Err(FindingError::NoPlayerFound) => {}
+        };
+        // If there is no player and a new message is received it should to be a player starting but loop just in case
+        loop {
+            self.connection.process_events_blocking_until_received();
+            match self.find_active() {
+                Ok(player) => return Ok(player),
+                Err(FindingError::DBusError(err)) => return Err(err),
+                Err(FindingError::NoPlayerFound) => {}
+            };
+        }
+    }
+
+    /// Same as [`find_with_name`](Self::find_with_name) but blocks until a [`Player`] is found or [`DBusError`] happens.
+    pub fn wait_for_player_with_name<'b>(&self, name: &str) -> Result<Player<'b>, DBusError> {
+        match self.find_with_name(name) {
+            Ok(player) => return Ok(player),
+            Err(FindingError::DBusError(err)) => return Err(err),
+            Err(FindingError::NoPlayerFound) => {}
+        };
+        loop {
+            self.connection.process_events_blocking_until_received();
+            match self.find_with_name(name) {
+                Ok(player) => return Ok(player),
+                Err(FindingError::DBusError(err)) => return Err(err),
+                Err(FindingError::NoPlayerFound) => {}
+            };
         }
     }
 
