@@ -41,7 +41,7 @@ mod pooled_connection;
 mod progress;
 mod track_list;
 
-pub use crate::event::{Event, EventError, PlayerEvents};
+pub use crate::event::{Event, EventError, PlayerEvents, PlayerWatcher};
 pub use crate::find::{FindingError, PlayerFinder};
 pub use crate::metadata::Metadata;
 pub use crate::metadata::Value as MetadataValue;
