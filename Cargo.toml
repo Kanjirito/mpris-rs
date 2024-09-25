@@ -22,7 +22,7 @@ tokio = ["zbus/tokio"]
 serde = ["dep:serde"]
 
 [dependencies]
-zbus = "3.4.0"
+zbus = "4.4.0"
 serde = { version = "1.0.164", optional = true }
 
 # Example dependencies

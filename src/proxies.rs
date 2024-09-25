@@ -1,23 +1,25 @@
 use std::collections::HashMap;
 
-use zbus::dbus_proxy;
+use zbus::proxy;
 use zbus::zvariant::Value;
 
-#[dbus_proxy(
+#[proxy(
     default_service = "org.freedesktop.DBus",
     interface = "org.freedesktop.DBus",
-    default_path = "/org/freedesktop/DBus"
+    default_path = "/org/freedesktop/DBus",
+    gen_blocking = false
 )]
 pub(crate) trait DBus {
     fn list_names(&self) -> zbus::Result<Vec<String>>;
 }
 
-#[dbus_proxy(
+#[proxy(
     interface = "org.mpris.MediaPlayer2",
-    default_path = "/org/mpris/MediaPlayer2"
+    default_path = "/org/mpris/MediaPlayer2",
+    gen_blocking = false
 )]
 pub(crate) trait MediaPlayer2 {
-    #[dbus_proxy(property)]
+    #[zbus(property)]
     fn identity(&self) -> zbus::Result<String>;
 }
 
@@ -27,11 +29,12 @@ impl MediaPlayer2Proxy<'_> {
     }
 }
 
-#[dbus_proxy(
+#[proxy(
     interface = "org.mpris.MediaPlayer2.Player",
-    default_path = "/org/mpris/MediaPlayer2"
+    default_path = "/org/mpris/MediaPlayer2",
+    gen_blocking = false
 )]
 pub(crate) trait Player {
-    #[dbus_proxy(property)]
+    #[zbus(property)]
     fn metadata(&self) -> zbus::Result<HashMap<String, Value>>;
 }
