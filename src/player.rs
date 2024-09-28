@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use zbus::{names::BusName, Connection};
 
 use crate::{
-    metadata::MetadataValue,
+    metadata::{MetadataValue, TrackID},
     proxies::{DBusProxy, MediaPlayer2Proxy, PlayerProxy},
     Metadata, Mpris,
 };
@@ -44,10 +44,6 @@ impl<'conn> Player<'conn> {
         })
     }
 
-    pub async fn identity(&self) -> Result<String, Box<dyn std::error::Error>> {
-        Ok(self.mp2_proxy.identity().await?)
-    }
-
     pub async fn metadata(&self) -> Result<Metadata, Box<dyn std::error::Error>> {
         Ok(self.raw_metadata().await?.into())
     }
@@ -63,6 +59,166 @@ impl<'conn> Player<'conn> {
 
     pub fn bus_name(&self) -> &str {
         self.mp2_proxy.bus_name()
+    }
+
+    pub async fn quit(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.mp2_proxy.quit().await?)
+    }
+
+    pub async fn can_quit(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.mp2_proxy.can_quit().await?)
+    }
+
+    pub async fn raise(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.mp2_proxy.raise().await?)
+    }
+
+    pub async fn can_raise(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.mp2_proxy.can_raise().await?)
+    }
+
+    pub async fn desktop_entry(&self) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(self.mp2_proxy.desktop_entry().await?)
+    }
+
+    pub async fn has_track_list(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.mp2_proxy.has_track_list().await?)
+    }
+
+    pub async fn identity(&self) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(self.mp2_proxy.identity().await?)
+    }
+
+    pub async fn supported_mime_types(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        Ok(self.mp2_proxy.supported_mime_types().await?)
+    }
+
+    pub async fn supported_uri_schemes(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        Ok(self.mp2_proxy.supported_uri_schemes().await?)
+    }
+
+    pub async fn can_control(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.can_control().await?)
+    }
+
+    pub async fn next(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.next().await?)
+    }
+
+    pub async fn can_go_next(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.can_go_next().await?)
+    }
+
+    pub async fn previous(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.previous().await?)
+    }
+
+    pub async fn can_go_previous(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.can_go_previous().await?)
+    }
+
+    pub async fn play(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.play().await?)
+    }
+
+    pub async fn can_play(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.can_play().await?)
+    }
+
+    pub async fn pause(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.pause().await?)
+    }
+
+    pub async fn can_pause(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.can_pause().await?)
+    }
+
+    pub async fn play_pause(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.play_pause().await?)
+    }
+
+    pub async fn stop(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.stop().await?)
+    }
+
+    pub async fn stop_after_current(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.stop_after_current().await?)
+    }
+
+    pub async fn seek(
+        &self,
+        offset_in_microseconds: i64,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.seek(offset_in_microseconds).await?)
+    }
+
+    pub async fn can_seek(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.can_seek().await?)
+    }
+
+    pub async fn get_position(&self) -> Result<i64, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.position().await?)
+    }
+
+    pub async fn set_position(
+        &self,
+        track_id: &TrackID,
+        position: i64,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self
+            .player_proxy
+            .set_position(&(**track_id).try_into()?, position)
+            .await?)
+    }
+
+    pub async fn get_loop_status(&self) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.loop_status().await?)
+    }
+
+    pub async fn set_loop_status(&self, loop_status: &str) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.set_loop_status(loop_status).await?)
+    }
+
+
+    pub async fn playback_status(&self) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.playback_status().await?)
+    }
+
+
+    pub async fn open_uri(&self, uri: &str) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.open_uri(uri).await?)
+    }
+
+    pub async fn maximum_rate(&self) -> Result<f64, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.maximum_rate().await?)
+    }
+
+    pub async fn minimum_rate(&self) -> Result<f64, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.minimum_rate().await?)
+    }
+
+    pub async fn get_playback_rate(&self) -> Result<f64, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.rate().await?)
+    }
+
+    pub async fn set_playback_rate(&self, rate: f64) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.set_rate(rate).await?)
+    }
+
+    pub async fn get_shuffle(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.shuffle().await?)
+    }
+
+    pub async fn set_shuffle(&self, shuffle: bool) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.set_shuffle(shuffle).await?)
+    }
+
+    pub async fn get_volume(&self) -> Result<f64, Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.volume().await?)
+    }
+
+    pub async fn set_volume(&self, volume: f64) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.player_proxy.set_volume(volume).await?)
     }
 }
 
