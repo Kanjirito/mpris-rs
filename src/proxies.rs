@@ -105,7 +105,7 @@ pub(crate) trait Player {
     fn seeked(&self, position: i64) -> zbus::Result<()>;
 
     /// CanControl property
-    #[zbus(property)]
+    #[zbus(property(emits_changed_signal = "const"))]
     fn can_control(&self) -> zbus::Result<bool>;
 
     /// CanGoNext property
@@ -152,7 +152,7 @@ pub(crate) trait Player {
     fn playback_status(&self) -> zbus::Result<String>;
 
     /// Position property
-    #[zbus(property)]
+    #[zbus(property(emits_changed_signal = "const"))]
     fn position(&self) -> zbus::Result<i64>;
 
     /// Rate property
