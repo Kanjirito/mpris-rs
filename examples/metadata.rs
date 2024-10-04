@@ -17,7 +17,7 @@ async fn main() -> Result<(), MprisError> {
     Ok(())
 }
 
-async fn print_metadata(player: Player<'_>) -> Result<(), MprisError> {
+async fn print_metadata(player: Player) -> Result<(), MprisError> {
     println!(
         "Player: {} ({})",
         player.identity().await?,

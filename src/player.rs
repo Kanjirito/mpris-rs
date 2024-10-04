@@ -11,23 +11,23 @@ use crate::{
 pub(crate) const MPRIS2_PREFIX: &str = "org.mpris.MediaPlayer2.";
 // pub(crate) const MPRIS2_PATH: &str = "/org/mpris/MediaPlayer2";
 
-pub struct Player<'conn> {
-    mp2_proxy: MediaPlayer2Proxy<'conn>,
-    player_proxy: PlayerProxy<'conn>,
+pub struct Player {
+    mp2_proxy: MediaPlayer2Proxy<'static>,
+    player_proxy: PlayerProxy<'static>,
 }
 
-impl<'conn> Player<'conn> {
+impl Player {
     pub async fn new<B>(
-        mpris: &'conn Mpris,
+        mpris: &Mpris,
         bus_name: BusName<'static>,
-    ) -> Result<Player<'conn>, MprisError> {
+    ) -> Result<Player, MprisError> {
         Player::new_from_connection(mpris.connection.clone(), bus_name).await
     }
 
     pub(crate) async fn new_from_connection(
         connection: Connection,
         bus_name: BusName<'static>,
-    ) -> Result<Player<'conn>, MprisError> {
+    ) -> Result<Player, MprisError> {
         let mp2_proxy = MediaPlayer2Proxy::builder(&connection)
             .destination(bus_name.clone())?
             .build()
@@ -214,7 +214,7 @@ impl<'conn> Player<'conn> {
     }
 }
 
-impl<'a> std::fmt::Debug for Player<'a> {
+impl std::fmt::Debug for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Player")
             .field("bus_name", &self.bus_name())
