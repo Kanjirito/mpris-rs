@@ -29,6 +29,33 @@ pub struct Metadata {
     pub user_rating: Option<f64>,
 }
 
+impl Metadata {
+    pub fn is_empty(&self) -> bool {
+        self.album_artists.is_none()
+            && self.album_name.is_none()
+            && self.art_url.is_none()
+            && self.artists.is_none()
+            && self.audio_bpm.is_none()
+            && self.auto_rating.is_none()
+            && self.comments.is_none()
+            && self.composers.is_none()
+            && self.content_created.is_none()
+            && self.disc_number.is_none()
+            && self.first_used.is_none()
+            && self.genres.is_none()
+            && self.last_used.is_none()
+            && self.length.is_none()
+            && self.lyricists.is_none()
+            && self.lyrics.is_none()
+            && self.title.is_none()
+            && self.track_id.is_none()
+            && self.track_number.is_none()
+            && self.url.is_none()
+            && self.url.is_none()
+            && self.user_rating.is_none()
+    }
+}
+
 macro_rules! extract {
     ($hash:ident, $key:expr, $f:expr) => {
         extract(&mut $hash, $key, $f)
