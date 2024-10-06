@@ -4,12 +4,9 @@ use zbus::{names::BusName, Connection};
 
 use crate::{
     metadata::{MetadataValue, TrackID},
-    proxies::{DBusProxy, MediaPlayer2Proxy, PlayerProxy},
+    proxies::{MediaPlayer2Proxy, PlayerProxy},
     LoopStatus, Metadata, Mpris, MprisError, PlaybackStatus,
 };
-
-pub(crate) const MPRIS2_PREFIX: &str = "org.mpris.MediaPlayer2.";
-// pub(crate) const MPRIS2_PATH: &str = "/org/mpris/MediaPlayer2";
 
 pub struct Player {
     mp2_proxy: MediaPlayer2Proxy<'static>,
@@ -220,21 +217,4 @@ impl std::fmt::Debug for Player {
             .field("bus_name", &self.bus_name())
             .finish()
     }
-}
-
-pub(crate) async fn all(connection: &Connection) -> Result<Vec<Player>, MprisError> {
-    let connection = connection.clone();
-    let proxy = DBusProxy::new(&connection).await?;
-    let names = proxy.list_names().await?;
-
-    let mut players = Vec::new();
-    for name in names.into_iter() {
-        if name.starts_with(MPRIS2_PREFIX) {
-            if let Ok(bus_name) = name.try_into() {
-                players.push(Player::new_from_connection(connection.clone(), bus_name).await?);
-            }
-        }
-    }
-
-    Ok(players)
 }

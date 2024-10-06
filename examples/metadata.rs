@@ -5,7 +5,7 @@ async fn main() -> Result<(), MprisError> {
     let mpris = Mpris::new().await?;
     let mut total = 0;
 
-    for player in mpris.players().await? {
+    for player in mpris.all_players().await? {
         print_metadata(player).await?;
         total += 1;
     }

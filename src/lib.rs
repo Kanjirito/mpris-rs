@@ -1,6 +1,10 @@
+use crate::proxies::DBusProxy;
 use std::fmt::Display;
 
-use zbus::Connection;
+use zbus::{
+    names::{BusName, WellKnownName},
+    Connection,
+};
 
 mod metadata;
 mod player;
@@ -10,6 +14,8 @@ use metadata::InvalidTrackID;
 
 pub use metadata::{Metadata, TrackID};
 pub use player::Player;
+
+pub(crate) const MPRIS2_PREFIX: &str = "org.mpris.MediaPlayer2.";
 
 pub struct Mpris {
     connection: Connection,
@@ -21,8 +27,88 @@ impl Mpris {
         Ok(Self { connection })
     }
 
-    pub async fn players(&self) -> Result<Vec<Player>, MprisError> {
-        player::all(&self.connection).await
+    pub fn new_from_connection(connection: Connection) -> Self {
+        Self { connection }
+    }
+
+    pub async fn find_first(&self) -> Result<Option<Player>, MprisError> {
+        match self.all_player_bus_names().await?.into_iter().next() {
+            Some(bus) => Ok(Some(
+                Player::new_from_connection(self.connection.clone(), bus).await?,
+            )),
+            None => Ok(None),
+        }
+    }
+
+    pub async fn find_active(&self) -> Result<Option<Player>, MprisError> {
+        let players = self.all_players().await?;
+        if players.is_empty() {
+            return Ok(None);
+        }
+
+        let mut first_paused: Option<Player> = None;
+        let mut first_with_track: Option<Player> = None;
+        let mut first_found: Option<Player> = None;
+
+        for player in players {
+            let player_status = player.playback_status().await?;
+
+            if player_status == PlaybackStatus::Playing {
+                return Ok(Some(player));
+            }
+
+            if first_paused.is_none() && player_status == PlaybackStatus::Paused {
+                first_paused.replace(player);
+            } else if first_with_track.is_none() && !player.metadata().await?.is_empty() {
+                first_with_track.replace(player);
+            } else if first_found.is_none() {
+                first_found.replace(player);
+            }
+        }
+
+        Ok(first_paused.or(first_with_track).or(first_found))
+    }
+
+    pub async fn find_by_name(&self, name: &str) -> Result<Option<Player>, MprisError> {
+        let players = self.all_players().await?;
+        if players.is_empty() {
+            return Ok(None);
+        }
+        for player in players {
+            if player.identity().await?.to_lowercase() == name {
+                return Ok(Some(player));
+            }
+        }
+        Ok(None)
+    }
+
+    pub async fn all_players(&self) -> Result<Vec<Player>, MprisError> {
+        let bus_names = self.all_player_bus_names().await?;
+        let mut players = Vec::with_capacity(bus_names.len());
+        for player_name in bus_names {
+            players.push(Player::new_from_connection(self.connection.clone(), player_name).await?);
+        }
+        Ok(players)
+    }
+
+    async fn all_player_bus_names(&self) -> Result<Vec<BusName<'static>>, MprisError> {
+        let proxy = DBusProxy::new(&self.connection).await?;
+        let mut names: Vec<BusName> = proxy
+            .list_names()
+            .await?
+            .into_iter()
+            .filter(|name| name.starts_with(MPRIS2_PREFIX))
+            // We got the bus name from the D-Bus server so unchecked is fine
+            .map(|name| BusName::from(WellKnownName::from_string_unchecked(name)))
+            .collect();
+        names.sort_unstable_by_key(|n| n.to_lowercase());
+        Ok(names)
+    }
+}
+
+impl From<Connection> for Mpris {
+    fn from(value: Connection) -> Self {
+        Self::new_from_connection(value)
     }
 }
 
