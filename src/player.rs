@@ -1,23 +1,22 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use zbus::{names::BusName, Connection};
 
 use crate::{
+    extensions::DurationExt,
     metadata::{MetadataValue, TrackID},
     proxies::{MediaPlayer2Proxy, PlayerProxy},
     LoopStatus, Metadata, Mpris, MprisError, PlaybackStatus,
 };
 
 pub struct Player {
+    bus_name: BusName<'static>,
     mp2_proxy: MediaPlayer2Proxy<'static>,
     player_proxy: PlayerProxy<'static>,
 }
 
 impl Player {
-    pub async fn new<B>(
-        mpris: &Mpris,
-        bus_name: BusName<'static>,
-    ) -> Result<Player, MprisError> {
+    pub async fn new(mpris: &Mpris, bus_name: BusName<'static>) -> Result<Player, MprisError> {
         Player::new_from_connection(mpris.connection.clone(), bus_name).await
     }
 
@@ -36,6 +35,7 @@ impl Player {
             .await?;
 
         Ok(Player {
+            bus_name,
             mp2_proxy,
             player_proxy,
         })
@@ -53,7 +53,7 @@ impl Player {
     }
 
     pub fn bus_name(&self) -> &str {
-        self.mp2_proxy.bus_name()
+        self.bus_name.as_str()
     }
 
     pub async fn quit(&self) -> Result<(), MprisError> {
@@ -144,18 +144,35 @@ impl Player {
         Ok(self.player_proxy.seek(offset_in_microseconds).await?)
     }
 
+    pub async fn seek_forwards(&self, offset: Duration) -> Result<(), MprisError> {
+        Ok(self.player_proxy.seek(offset.convert_to_micro()?).await?)
+    }
+
+    pub async fn seek_backwards(&self, offset: Duration) -> Result<(), MprisError> {
+        Ok(self
+            .player_proxy
+            .seek(-(offset.convert_to_micro()?))
+            .await?)
+    }
+
     pub async fn can_seek(&self) -> Result<bool, MprisError> {
         Ok(self.player_proxy.can_seek().await?)
     }
 
-    pub async fn get_position(&self) -> Result<i64, MprisError> {
-        Ok(self.player_proxy.position().await?)
+    pub async fn get_position(&self) -> Result<Duration, MprisError> {
+        Ok(Duration::from_micros(
+            self.player_proxy.position().await? as u64,
+        ))
     }
 
-    pub async fn set_position(&self, track_id: &TrackID, position: i64) -> Result<(), MprisError> {
+    pub async fn set_position(
+        &self,
+        track_id: &TrackID,
+        position: Duration,
+    ) -> Result<(), MprisError> {
         Ok(self
             .player_proxy
-            .set_position(&track_id.get_object_path(), position)
+            .set_position(&track_id.get_object_path(), position.convert_to_micro()?)
             .await?)
     }
 

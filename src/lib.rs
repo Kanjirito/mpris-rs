@@ -6,6 +6,7 @@ use zbus::{
     Connection,
 };
 
+mod extensions;
 mod metadata;
 mod player;
 mod proxies;
@@ -240,9 +241,16 @@ impl From<InvalidLoopStatus> for MprisError {
         Self::ParseError(value.0)
     }
 }
+
 impl From<InvalidTrackID> for MprisError {
     fn from(value: InvalidTrackID) -> Self {
         Self::ParseError(value.0)
+    }
+}
+
+impl From<String> for MprisError {
+    fn from(value: String) -> Self {
+        Self::Miscellaneous(value)
     }
 }
 

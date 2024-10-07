@@ -54,12 +54,6 @@ pub(crate) trait MediaPlayer2 {
     fn supported_uri_schemes(&self) -> zbus::Result<Vec<String>>;
 }
 
-impl MediaPlayer2Proxy<'_> {
-    pub fn bus_name(&self) -> &str {
-        self.inner().destination().as_str()
-    }
-}
-
 #[proxy(
     interface = "org.mpris.MediaPlayer2.Player",
     default_path = "/org/mpris/MediaPlayer2",
