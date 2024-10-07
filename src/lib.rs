@@ -6,13 +6,15 @@ use zbus::{
     Connection,
 };
 
+pub mod errors;
 mod extensions;
 mod metadata;
 mod player;
 mod proxies;
 
-use metadata::InvalidTrackID;
+use errors::*;
 
+pub use errors::MprisError;
 pub use metadata::{Metadata, TrackID};
 pub use player::Player;
 
@@ -128,10 +130,6 @@ pub enum PlaybackStatus {
     Stopped,
 }
 
-/// [`PlaybackStatus`] had an invalid string value.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct InvalidPlaybackStatus(String);
-
 impl ::std::str::FromStr for PlaybackStatus {
     type Err = InvalidPlaybackStatus;
 
@@ -178,10 +176,6 @@ pub enum LoopStatus {
     Playlist,
 }
 
-/// [`LoopStatus`] had an invalid string value.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct InvalidLoopStatus(String);
-
 impl ::std::str::FromStr for LoopStatus {
     type Err = InvalidLoopStatus;
 
@@ -211,51 +205,8 @@ impl Display for LoopStatus {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum MprisError {
-    /// An error occurred while talking to the D-Bus.
-    DbusError(zbus::Error),
-
-    /// Failed to parse an enum from a string value received from the [`Player`]. This means that the
-    /// [`Player`] replied with unexpected data.
-    ParseError(String),
-
-    /// Some other unexpected error occurred.
-    Miscellaneous(String),
-}
-
-impl From<zbus::Error> for MprisError {
-    fn from(value: zbus::Error) -> Self {
-        MprisError::DbusError(value)
-    }
-}
-
-impl From<InvalidPlaybackStatus> for MprisError {
-    fn from(value: InvalidPlaybackStatus) -> Self {
-        Self::ParseError(value.0)
-    }
-}
-
-impl From<InvalidLoopStatus> for MprisError {
-    fn from(value: InvalidLoopStatus) -> Self {
-        Self::ParseError(value.0)
-    }
-}
-
-impl From<InvalidTrackID> for MprisError {
-    fn from(value: InvalidTrackID) -> Self {
-        Self::ParseError(value.0)
-    }
-}
-
-impl From<String> for MprisError {
-    fn from(value: String) -> Self {
-        Self::Miscellaneous(value)
-    }
-}
-
 #[cfg(test)]
-mod error_tests {
+mod status_enums_tests {
     use super::*;
 
     #[test]

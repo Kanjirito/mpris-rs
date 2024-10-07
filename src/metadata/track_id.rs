@@ -3,6 +3,7 @@ use std::ops::Deref;
 use zbus::zvariant::{ObjectPath, OwnedObjectPath, OwnedValue, Value};
 
 use super::MetadataValue;
+use crate::errors::InvalidTrackID;
 
 const NO_TRACK: &str = "/org/mpris/MediaPlayer2/TrackList/NoTrack";
 
@@ -34,10 +35,6 @@ impl TrackID {
         ObjectPath::from_str_unchecked(&self.0)
     }
 }
-
-/// [`LoopStatus`] had an invalid string value.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct InvalidTrackID(pub(crate) String);
 
 impl TryFrom<&str> for TrackID {
     type Error = InvalidTrackID;
