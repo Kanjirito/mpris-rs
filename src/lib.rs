@@ -78,7 +78,7 @@ impl Mpris {
             return Ok(None);
         }
         for player in players {
-            if player.identity().await?.to_lowercase() == name {
+            if player.identity().await?.to_lowercase() == name.to_lowercase() {
                 return Ok(Some(player));
             }
         }
