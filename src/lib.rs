@@ -3,7 +3,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures_util::stream::{FusedStream, Stream};
+use futures_util::stream::{FusedStream, Stream, TryStreamExt};
 use zbus::{
     names::{BusName, WellKnownName},
     Connection,
@@ -50,8 +50,8 @@ impl Mpris {
     }
 
     pub async fn find_active(&self) -> Result<Option<Player>, MprisError> {
-        let players = self.all_players().await?;
-        if players.is_empty() {
+        let mut players = self.into_stream().await?;
+        if players.is_terminated() {
             return Ok(None);
         }
 
@@ -59,7 +59,7 @@ impl Mpris {
         let mut first_with_track: Option<Player> = None;
         let mut first_found: Option<Player> = None;
 
-        for player in players {
+        while let Some(player) = players.try_next().await? {
             let player_status = player.playback_status().await?;
 
             if player_status == PlaybackStatus::Playing {
@@ -79,11 +79,11 @@ impl Mpris {
     }
 
     pub async fn find_by_name(&self, name: &str) -> Result<Option<Player>, MprisError> {
-        let players = self.all_players().await?;
-        if players.is_empty() {
+        let mut players = self.into_stream().await?;
+        if players.is_terminated() {
             return Ok(None);
         }
-        for player in players {
+        while let Some(player) = players.try_next().await? {
             if player.identity().await?.to_lowercase() == name.to_lowercase() {
                 return Ok(Some(player));
             }
