@@ -24,6 +24,7 @@ serde = ["dep:serde"]
 [dependencies]
 zbus = "4.4.0"
 serde = { version = "1.0.164", optional = true }
+futures-util = "0.3.31"
 
 # Example dependencies
 [dev-dependencies]

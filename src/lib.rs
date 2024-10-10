@@ -1,6 +1,9 @@
-use crate::proxies::DBusProxy;
 use std::fmt::Display;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
+use futures_util::stream::{FusedStream, Stream};
 use zbus::{
     names::{BusName, WellKnownName},
     Connection,
@@ -14,11 +17,14 @@ mod proxies;
 
 use errors::*;
 
+use crate::proxies::DBusProxy;
 pub use errors::MprisError;
 pub use metadata::{Metadata, TrackID};
 pub use player::Player;
 
 pub(crate) const MPRIS2_PREFIX: &str = "org.mpris.MediaPlayer2.";
+
+type PlayerFuture = Pin<Box<dyn Future<Output = Result<Player, MprisError>> + Send + Sync>>;
 
 pub struct Mpris {
     connection: Connection,
@@ -106,6 +112,57 @@ impl Mpris {
             .collect();
         names.sort_unstable_by_key(|n| n.to_lowercase());
         Ok(names)
+    }
+
+    pub async fn into_stream(&self) -> Result<PlayerStream, MprisError> {
+        let buses = self.all_player_bus_names().await?;
+        Ok(PlayerStream::new(&self.connection, buses))
+    }
+}
+
+pub struct PlayerStream {
+    futures: Vec<PlayerFuture>,
+}
+
+impl PlayerStream {
+    pub fn new(connection: &Connection, buses: Vec<BusName<'static>>) -> Self {
+        let mut futures: Vec<PlayerFuture> = Vec::with_capacity(buses.len());
+        for fut in buses
+            .into_iter()
+            .rev()
+            .map(|bus_name| Box::pin(Player::new_from_connection(connection.clone(), bus_name)))
+        {
+            futures.push(fut);
+        }
+        Self { futures }
+    }
+}
+
+impl Stream for PlayerStream {
+    type Item = Result<Player, MprisError>;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        match self.futures.last_mut() {
+            Some(last) => match last.as_mut().poll(cx) {
+                Poll::Ready(result) => {
+                    self.futures.pop();
+                    Poll::Ready(Some(result))
+                }
+                Poll::Pending => Poll::Pending,
+            },
+            None => Poll::Ready(None),
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let l = self.futures.len();
+        (l, Some(l))
+    }
+}
+
+impl FusedStream for PlayerStream {
+    fn is_terminated(&self) -> bool {
+        self.futures.is_empty()
     }
 }
 
