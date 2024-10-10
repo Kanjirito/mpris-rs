@@ -28,16 +28,26 @@ type PlayerFuture = Pin<Box<dyn Future<Output = Result<Player, MprisError>> + Se
 
 pub struct Mpris {
     connection: Connection,
+    dbus_proxy: DBusProxy<'static>,
 }
 
 impl Mpris {
     pub async fn new() -> Result<Self, MprisError> {
         let connection = Connection::session().await?;
-        Ok(Self { connection })
+        let dbus_proxy = DBusProxy::new(&connection).await?;
+
+        Ok(Self {
+            connection,
+            dbus_proxy,
+        })
     }
 
-    pub fn new_from_connection(connection: Connection) -> Self {
-        Self { connection }
+    pub async fn new_from_connection(connection: Connection) -> Result<Self, MprisError> {
+        let dbus_proxy = DBusProxy::new(&connection).await?;
+        Ok(Self {
+            connection,
+            dbus_proxy,
+        })
     }
 
     pub async fn find_first(&self) -> Result<Option<Player>, MprisError> {
@@ -101,8 +111,8 @@ impl Mpris {
     }
 
     async fn all_player_bus_names(&self) -> Result<Vec<BusName<'static>>, MprisError> {
-        let proxy = DBusProxy::new(&self.connection).await?;
-        let mut names: Vec<BusName> = proxy
+        let mut names: Vec<BusName> = self
+            .dbus_proxy
             .list_names()
             .await?
             .into_iter()
@@ -163,12 +173,6 @@ impl Stream for PlayerStream {
 impl FusedStream for PlayerStream {
     fn is_terminated(&self) -> bool {
         self.futures.is_empty()
-    }
-}
-
-impl From<Connection> for Mpris {
-    fn from(value: Connection) -> Self {
-        Self::new_from_connection(value)
     }
 }
 
