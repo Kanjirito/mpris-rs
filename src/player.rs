@@ -1,5 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
+use futures_util::join;
 use zbus::{names::BusName, Connection};
 
 use crate::{
@@ -24,20 +25,14 @@ impl Player {
         connection: Connection,
         bus_name: BusName<'static>,
     ) -> Result<Player, MprisError> {
-        let mp2_proxy = MediaPlayer2Proxy::builder(&connection)
-            .destination(bus_name.clone())?
-            .build()
-            .await?;
-
-        let player_proxy = PlayerProxy::builder(&connection)
-            .destination(bus_name.clone())?
-            .build()
-            .await?;
-
+        let (mp2_proxy, player_proxy) = join!(
+            MediaPlayer2Proxy::new(&connection, bus_name.clone()),
+            PlayerProxy::new(&connection, bus_name.clone())
+        );
         Ok(Player {
             bus_name,
-            mp2_proxy,
-            player_proxy,
+            mp2_proxy: mp2_proxy?,
+            player_proxy: player_proxy?,
         })
     }
 
