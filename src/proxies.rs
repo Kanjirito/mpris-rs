@@ -54,6 +54,22 @@ pub(crate) trait MediaPlayer2 {
     fn supported_uri_schemes(&self) -> zbus::Result<Vec<String>>;
 }
 
+impl MediaPlayer2Proxy<'_> {
+    pub(crate) async fn ping(&self) -> zbus::Result<()> {
+        self.inner()
+            .connection()
+            .call_method(
+                Some(self.0.destination()),
+                self.0.path(),
+                Some("org.freedesktop.DBus.Peer"),
+                "Ping",
+                &(),
+            )
+            .await
+            .and(Ok(()))
+    }
+}
+
 #[proxy(
     interface = "org.mpris.MediaPlayer2.Player",
     default_path = "/org/mpris/MediaPlayer2",

@@ -7,7 +7,7 @@ use crate::{
     extensions::DurationExt,
     metadata::{MetadataValue, TrackID},
     proxies::{MediaPlayer2Proxy, PlayerProxy},
-    LoopStatus, Metadata, Mpris, MprisError, PlaybackStatus,
+    LoopStatus, Metadata, Mpris, MprisError, PlaybackStatus, MPRIS2_PREFIX,
 };
 
 pub struct Player {
@@ -47,8 +47,29 @@ impl Player {
         Ok(raw)
     }
 
+    pub async fn is_running(&self) -> Result<bool, MprisError> {
+        match self.mp2_proxy.ping().await {
+            Ok(_) => Ok(true),
+            Err(e) => {
+                if let zbus::Error::MethodError(ref err_name, _, _) = e {
+                    if err_name.as_str() == "org.freedesktop.DBus.Error.ServiceUnknown" {
+                        Ok(false)
+                    } else {
+                        Err(e.into())
+                    }
+                } else {
+                    Err(e.into())
+                }
+            }
+        }
+    }
+
     pub fn bus_name(&self) -> &str {
         self.bus_name.as_str()
+    }
+
+    pub fn bus_name_trimmed(&self) -> &str {
+        self.bus_name().trim_start_matches(MPRIS2_PREFIX)
     }
 
     pub async fn quit(&self) -> Result<(), MprisError> {
@@ -71,7 +92,7 @@ impl Player {
         Ok(self.mp2_proxy.desktop_entry().await?)
     }
 
-    pub async fn has_track_list(&self) -> Result<bool, MprisError> {
+    pub async fn supports_track_list(&self) -> Result<bool, MprisError> {
         Ok(self.mp2_proxy.has_track_list().await?)
     }
 
