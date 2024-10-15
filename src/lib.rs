@@ -9,8 +9,8 @@ use zbus::{
     Connection,
 };
 
+mod duration;
 pub mod errors;
-mod extensions;
 mod metadata;
 mod player;
 mod proxies;
@@ -18,6 +18,7 @@ mod proxies;
 use errors::*;
 
 use crate::proxies::DBusProxy;
+pub use duration::MprisDuration;
 pub use errors::MprisError;
 pub use metadata::{Metadata, TrackID};
 pub use player::Player;

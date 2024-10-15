@@ -1,13 +1,12 @@
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
 
 use futures_util::join;
 use zbus::{names::BusName, Connection};
 
 use crate::{
-    extensions::DurationExt,
-    metadata::{MetadataValue, TrackID},
+    metadata::MetadataValue,
     proxies::{MediaPlayer2Proxy, PlayerProxy},
-    LoopStatus, Metadata, Mpris, MprisError, PlaybackStatus, MPRIS2_PREFIX,
+    LoopStatus, Metadata, Mpris, MprisDuration, MprisError, PlaybackStatus, TrackID, MPRIS2_PREFIX,
 };
 
 pub struct Player {
@@ -160,35 +159,30 @@ impl Player {
         Ok(self.player_proxy.seek(offset_in_microseconds).await?)
     }
 
-    pub async fn seek_forwards(&self, offset: Duration) -> Result<(), MprisError> {
-        Ok(self.player_proxy.seek(offset.convert_to_micro()?).await?)
+    pub async fn seek_forwards(&self, offset: MprisDuration) -> Result<(), MprisError> {
+        Ok(self.player_proxy.seek(offset.into()).await?)
     }
 
-    pub async fn seek_backwards(&self, offset: Duration) -> Result<(), MprisError> {
-        Ok(self
-            .player_proxy
-            .seek(-(offset.convert_to_micro()?))
-            .await?)
+    pub async fn seek_backwards(&self, offset: MprisDuration) -> Result<(), MprisError> {
+        Ok(self.player_proxy.seek(-i64::from(offset)).await?)
     }
 
     pub async fn can_seek(&self) -> Result<bool, MprisError> {
         Ok(self.player_proxy.can_seek().await?)
     }
 
-    pub async fn get_position(&self) -> Result<Duration, MprisError> {
-        Ok(Duration::from_micros(
-            self.player_proxy.position().await? as u64,
-        ))
+    pub async fn get_position(&self) -> Result<MprisDuration, MprisError> {
+        Ok(self.player_proxy.position().await?.try_into()?)
     }
 
     pub async fn set_position(
         &self,
         track_id: &TrackID,
-        position: Duration,
+        position: MprisDuration,
     ) -> Result<(), MprisError> {
         Ok(self
             .player_proxy
-            .set_position(&track_id.get_object_path(), position.convert_to_micro()?)
+            .set_position(&track_id.get_object_path(), position.into())
             .await?)
     }
 

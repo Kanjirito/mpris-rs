@@ -12,6 +12,19 @@ pub struct InvalidLoopStatus(pub(crate) String);
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct InvalidTrackID(pub(crate) String);
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct InvalidMprisDuration(pub(crate) String);
+
+impl InvalidMprisDuration {
+    pub(crate) fn new_too_big() -> Self {
+        Self("can't create MprisDuration, value too big".to_string())
+    }
+
+    pub(crate) fn new_negative() -> Self {
+        Self("can't create MprisDuration, value is negative".to_string())
+    }
+}
+
 macro_rules! impl_display {
     ($error:ty) => {
         impl Display for $error {
@@ -25,6 +38,7 @@ macro_rules! impl_display {
 impl_display!(InvalidPlaybackStatus);
 impl_display!(InvalidLoopStatus);
 impl_display!(InvalidTrackID);
+impl_display!(InvalidMprisDuration);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum MprisError {
@@ -59,6 +73,12 @@ impl From<InvalidLoopStatus> for MprisError {
 
 impl From<InvalidTrackID> for MprisError {
     fn from(value: InvalidTrackID) -> Self {
+        Self::ParseError(value.0)
+    }
+}
+
+impl From<InvalidMprisDuration> for MprisError {
+    fn from(value: InvalidMprisDuration) -> Self {
         Self::ParseError(value.0)
     }
 }

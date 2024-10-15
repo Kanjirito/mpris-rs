@@ -1,6 +1,7 @@
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
 
 use super::{MetadataValue, TrackID};
+use crate::MprisDuration;
 
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -18,7 +19,7 @@ pub struct Metadata {
     pub first_used: Option<String>,
     pub genres: Option<Vec<String>>,
     pub last_used: Option<String>,
-    pub length: Option<Duration>,
+    pub length: Option<MprisDuration>,
     pub lyricists: Option<Vec<String>>,
     pub lyrics: Option<String>,
     pub title: Option<String>,
@@ -85,8 +86,7 @@ impl From<HashMap<String, MetadataValue>> for Metadata {
             first_used: extract!(raw, "xesam:firstUsed", MetadataValue::into_string),
             genres: extract!(raw, "xesam:genre", MetadataValue::into_strings),
             last_used: extract!(raw, "xesam:lastUsed", MetadataValue::into_string),
-            length: extract!(raw, "mpris:length", MetadataValue::into_u64)
-                .map(Duration::from_micros),
+            length: extract!(raw, "mpris:length", |v| MprisDuration::try_from(v).ok()),
             lyricists: extract!(raw, "xesam:lyricist", MetadataValue::into_strings),
             lyrics: extract!(raw, "xesam:asText", MetadataValue::into_string),
             title: extract!(raw, "xesam:title", MetadataValue::into_nonempty_string),
