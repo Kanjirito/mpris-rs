@@ -1,14 +1,30 @@
+use std::fmt::Display;
+
 /// [`PlaybackStatus`][crate::PlaybackStatus] had an invalid string value.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct InvalidPlaybackStatus(pub(crate) String);
 
 /// [`LoopStatus`][crate::LoopStatus] had an invalid string value.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct InvalidLoopStatus(pub(crate) String);
 
 /// [`TrackID`][crate::metadata::TrackID] had an invalid ObjectPath.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct InvalidTrackID(pub(crate) String);
+
+macro_rules! impl_display {
+    ($error:ty) => {
+        impl Display for $error {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", self.0)
+            }
+        }
+    };
+}
+
+impl_display!(InvalidPlaybackStatus);
+impl_display!(InvalidLoopStatus);
+impl_display!(InvalidTrackID);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum MprisError {
