@@ -25,6 +25,9 @@ impl InvalidMprisDuration {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct InvalidMetadataValue(pub(crate) String);
+
 macro_rules! impl_display {
     ($error:ty) => {
         impl Display for $error {
@@ -39,6 +42,7 @@ impl_display!(InvalidPlaybackStatus);
 impl_display!(InvalidLoopStatus);
 impl_display!(InvalidTrackID);
 impl_display!(InvalidMprisDuration);
+impl_display!(InvalidMetadataValue);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum MprisError {

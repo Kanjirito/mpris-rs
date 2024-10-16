@@ -1,5 +1,7 @@
 use zbus::zvariant::Value;
 
+use crate::errors::InvalidMetadataValue;
+
 /*
 * Subset of DBus data types that are commonly used in MPRIS metadata, and a boolean variant as it
 * seems likely to be used in some custom metadata.
@@ -100,6 +102,133 @@ impl<'a> From<Value<'a>> for MetadataValue {
             Value::Dict(_) => MetadataValue::Unsupported,
             Value::Structure(_) => MetadataValue::Unsupported,
             Value::Fd(_) => MetadataValue::Unsupported,
+        }
+    }
+}
+
+impl From<bool> for MetadataValue {
+    fn from(value: bool) -> Self {
+        Self::Boolean(value)
+    }
+}
+
+impl From<f64> for MetadataValue {
+    fn from(value: f64) -> Self {
+        Self::Float(value)
+    }
+}
+
+impl From<i64> for MetadataValue {
+    fn from(value: i64) -> Self {
+        Self::SignedInt(value)
+    }
+}
+
+impl From<u64> for MetadataValue {
+    fn from(value: u64) -> Self {
+        Self::UnsignedInt(value)
+    }
+}
+
+impl From<String> for MetadataValue {
+    fn from(value: String) -> Self {
+        Self::String(value)
+    }
+}
+
+impl From<Vec<String>> for MetadataValue {
+    fn from(value: Vec<String>) -> Self {
+        Self::Strings(value)
+    }
+}
+
+impl From<super::TrackID> for MetadataValue {
+    fn from(value: super::TrackID) -> Self {
+        Self::String(value.into())
+    }
+}
+
+impl From<crate::MprisDuration> for MetadataValue {
+    fn from(value: crate::MprisDuration) -> Self {
+        Self::SignedInt(value.into())
+    }
+}
+
+impl TryFrom<MetadataValue> for bool {
+    type Error = InvalidMetadataValue;
+
+    fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
+        match value {
+            MetadataValue::Boolean(v) => Ok(v),
+            _ => Err(InvalidMetadataValue(
+                "expected MetadataValue::Boolean".to_string(),
+            )),
+        }
+    }
+}
+
+impl TryFrom<MetadataValue> for f64 {
+    type Error = InvalidMetadataValue;
+
+    fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
+        match value {
+            MetadataValue::Float(v) => Ok(v),
+            _ => Err(InvalidMetadataValue(
+                "expected MetadataValue::Float".to_string(),
+            )),
+        }
+    }
+}
+
+impl TryFrom<MetadataValue> for i64 {
+    type Error = InvalidMetadataValue;
+
+    fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
+        match value {
+            MetadataValue::SignedInt(v) => Ok(v),
+            _ => Err(InvalidMetadataValue(
+                "expected MetadataValue::SignedInt".to_string(),
+            )),
+        }
+    }
+}
+
+impl TryFrom<MetadataValue> for u64 {
+    type Error = InvalidMetadataValue;
+
+    fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
+        match value {
+            MetadataValue::UnsignedInt(v) => Ok(v),
+            _ => Err(InvalidMetadataValue(
+                "expected MetadataValue::UnsignedInt".to_string(),
+            )),
+        }
+    }
+}
+
+impl TryFrom<MetadataValue> for String {
+    type Error = InvalidMetadataValue;
+
+    fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
+        match value {
+            MetadataValue::String(v) => Ok(v),
+            _ => Err(InvalidMetadataValue(
+                "expected MetadataValue::String".to_string(),
+            )),
+        }
+    }
+}
+
+impl TryFrom<MetadataValue> for Vec<String> {
+    type Error = InvalidMetadataValue;
+
+    fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
+        match value {
+            MetadataValue::String(v) => Ok(vec![v]),
+            MetadataValue::Strings(v) => Ok(v),
+            _ => Err(InvalidMetadataValue(
+                "expected MetadataValue::Strings or MetadataValue::String".to_string(),
+            )),
         }
     }
 }
