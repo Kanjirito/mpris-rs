@@ -6,7 +6,7 @@ use zbus::zvariant::Value;
 *
 * See https://www.freedesktop.org/wiki/Specifications/mpris-spec/metadata/
 */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MetadataValue {
     Boolean(bool),
@@ -35,7 +35,7 @@ impl MetadataValue {
     pub fn into_i64(self) -> Option<i64> {
         match self {
             MetadataValue::SignedInt(i) => Some(i),
-            MetadataValue::UnsignedInt(i) => Some(0i64.saturating_add_unsigned(i)),
+            MetadataValue::UnsignedInt(i) => Some(i.clamp(0, i64::MAX as u64) as i64),
             _ => None,
         }
     }
@@ -72,10 +72,10 @@ impl<'a> From<Value<'a>> for MetadataValue {
             Value::Bool(v) => MetadataValue::Boolean(v),
             Value::I16(v) => MetadataValue::SignedInt(v as i64),
             Value::I32(v) => MetadataValue::SignedInt(v as i64),
-            Value::I64(v) => MetadataValue::SignedInt(v as i64),
+            Value::I64(v) => MetadataValue::SignedInt(v),
             Value::U16(v) => MetadataValue::UnsignedInt(v as u64),
             Value::U32(v) => MetadataValue::UnsignedInt(v as u64),
-            Value::U64(v) => MetadataValue::UnsignedInt(v as u64),
+            Value::U64(v) => MetadataValue::UnsignedInt(v),
             Value::U8(v) => MetadataValue::UnsignedInt(v as u64),
 
             Value::F64(v) => MetadataValue::Float(v),
@@ -86,7 +86,7 @@ impl<'a> From<Value<'a>> for MetadataValue {
 
             Value::Array(a) if a.full_signature() == "as" => {
                 let mut strings = Vec::with_capacity(a.len());
-                for v in a.into_iter() {
+                for v in a.iter() {
                     if let Value::Str(s) = v {
                         strings.push(s.to_string());
                     }
