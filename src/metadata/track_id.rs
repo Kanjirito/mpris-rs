@@ -100,7 +100,7 @@ impl TryFrom<&OwnedValue> for TrackID {
         match value.deref() {
             Value::Str(s) => s.as_str().try_into(),
             Value::ObjectPath(path) => Ok(Self(path.to_string())),
-            _ => Err(InvalidTrackID(String::from("not a String or ObjectPath"))),
+            _ => Err(InvalidTrackID::from("not a String or ObjectPath")),
         }
     }
 }
@@ -112,7 +112,7 @@ impl<'a> TryFrom<Value<'a>> for TrackID {
         match value {
             Value::Str(s) => s.as_str().try_into(),
             Value::ObjectPath(path) => Ok(Self(path.to_string())),
-            _ => Err(InvalidTrackID(String::from("not a String or ObjectPath"))),
+            _ => Err(InvalidTrackID::from("not a String or ObjectPath")),
         }
     }
 }

@@ -35,6 +35,18 @@ macro_rules! impl_display {
                 write!(f, "{}", self.0)
             }
         }
+
+        impl From<String> for $error {
+            fn from(value: String) -> Self {
+                Self(value)
+            }
+        }
+
+        impl From<&str> for $error {
+            fn from(value: &str) -> Self {
+                Self(value.to_string())
+            }
+        }
     };
 }
 

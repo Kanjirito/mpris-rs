@@ -200,7 +200,7 @@ impl ::std::str::FromStr for PlaybackStatus {
             "Playing" => Ok(Self::Playing),
             "Paused" => Ok(Self::Paused),
             "Stopped" => Ok(Self::Stopped),
-            _ => Err(InvalidPlaybackStatus(string.to_owned())),
+            _ => Err(InvalidPlaybackStatus::from(string)),
         }
     }
 }
@@ -246,7 +246,7 @@ impl ::std::str::FromStr for LoopStatus {
             "None" => Ok(LoopStatus::None),
             "Track" => Ok(LoopStatus::Track),
             "Playlist" => Ok(LoopStatus::Playlist),
-            _ => Err(InvalidLoopStatus(string.to_owned())),
+            _ => Err(InvalidLoopStatus::from(string)),
         }
     }
 }
@@ -282,15 +282,15 @@ mod status_enums_tests {
     fn invalid_playback_status() {
         assert_eq!(
             "".parse::<PlaybackStatus>(),
-            Err(InvalidPlaybackStatus("".into()))
+            Err(InvalidPlaybackStatus::from(""))
         );
         assert_eq!(
             "playing".parse::<PlaybackStatus>(),
-            Err(InvalidPlaybackStatus("playing".into()))
+            Err(InvalidPlaybackStatus::from("playing"))
         );
         assert_eq!(
             "wrong".parse::<PlaybackStatus>(),
-            Err(InvalidPlaybackStatus("wrong".into()))
+            Err(InvalidPlaybackStatus::from("wrong"))
         );
     }
 
@@ -310,14 +310,14 @@ mod status_enums_tests {
 
     #[test]
     fn invalid_loop_status() {
-        assert_eq!("".parse::<LoopStatus>(), Err(InvalidLoopStatus("".into())));
+        assert_eq!("".parse::<LoopStatus>(), Err(InvalidLoopStatus::from("")));
         assert_eq!(
             "track".parse::<LoopStatus>(),
-            Err(InvalidLoopStatus("track".into()))
+            Err(InvalidLoopStatus::from("track"))
         );
         assert_eq!(
             "wrong".parse::<LoopStatus>(),
-            Err(InvalidLoopStatus("wrong".into()))
+            Err(InvalidLoopStatus::from("wrong"))
         );
     }
 

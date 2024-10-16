@@ -160,8 +160,8 @@ impl TryFrom<MetadataValue> for bool {
     fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
         match value {
             MetadataValue::Boolean(v) => Ok(v),
-            _ => Err(InvalidMetadataValue(
-                "expected MetadataValue::Boolean".to_string(),
+            _ => Err(InvalidMetadataValue::from(
+                "expected MetadataValue::Boolean",
             )),
         }
     }
@@ -173,9 +173,7 @@ impl TryFrom<MetadataValue> for f64 {
     fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
         match value {
             MetadataValue::Float(v) => Ok(v),
-            _ => Err(InvalidMetadataValue(
-                "expected MetadataValue::Float".to_string(),
-            )),
+            _ => Err(InvalidMetadataValue::from("expected MetadataValue::Float")),
         }
     }
 }
@@ -186,8 +184,8 @@ impl TryFrom<MetadataValue> for i64 {
     fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
         match value {
             MetadataValue::SignedInt(v) => Ok(v),
-            _ => Err(InvalidMetadataValue(
-                "expected MetadataValue::SignedInt".to_string(),
+            _ => Err(InvalidMetadataValue::from(
+                "expected MetadataValue::SignedInt",
             )),
         }
     }
@@ -199,8 +197,8 @@ impl TryFrom<MetadataValue> for u64 {
     fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
         match value {
             MetadataValue::UnsignedInt(v) => Ok(v),
-            _ => Err(InvalidMetadataValue(
-                "expected MetadataValue::UnsignedInt".to_string(),
+            _ => Err(InvalidMetadataValue::from(
+                "expected MetadataValue::UnsignedInt",
             )),
         }
     }
@@ -212,9 +210,7 @@ impl TryFrom<MetadataValue> for String {
     fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
         match value {
             MetadataValue::String(v) => Ok(v),
-            _ => Err(InvalidMetadataValue(
-                "expected MetadataValue::String".to_string(),
-            )),
+            _ => Err(InvalidMetadataValue::from("expected MetadataValue::String")),
         }
     }
 }
@@ -226,8 +222,8 @@ impl TryFrom<MetadataValue> for Vec<String> {
         match value {
             MetadataValue::String(v) => Ok(vec![v]),
             MetadataValue::Strings(v) => Ok(v),
-            _ => Err(InvalidMetadataValue(
-                "expected MetadataValue::Strings or MetadataValue::String".to_string(),
+            _ => Err(InvalidMetadataValue::from(
+                "expected MetadataValue::Strings or MetadataValue::String",
             )),
         }
     }
