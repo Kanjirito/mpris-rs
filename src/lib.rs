@@ -79,7 +79,7 @@ impl Mpris {
 
             if first_paused.is_none() && player_status == PlaybackStatus::Paused {
                 first_paused.replace(player);
-            } else if first_with_track.is_none() && !player.metadata().await?.is_empty() {
+            } else if first_with_track.is_none() && !player.raw_metadata().await?.is_empty() {
                 first_with_track.replace(player);
             } else if first_found.is_none() {
                 first_found.replace(player);
