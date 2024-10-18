@@ -184,8 +184,15 @@ impl TryFrom<MetadataValue> for i64 {
     fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
         match value {
             MetadataValue::SignedInt(v) => Ok(v),
+            MetadataValue::UnsignedInt(v) => {
+                if v <= i64::MAX as u64 {
+                    Ok(v as i64)
+                } else {
+                    Err(InvalidMetadataValue::from("value too big for i64"))
+                }
+            }
             _ => Err(InvalidMetadataValue::from(
-                "expected MetadataValue::SignedInt",
+                "expected MetadataValue::SignedInt or MetadataValue::UnsignedInt",
             )),
         }
     }
@@ -197,8 +204,15 @@ impl TryFrom<MetadataValue> for u64 {
     fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
         match value {
             MetadataValue::UnsignedInt(v) => Ok(v),
+            MetadataValue::SignedInt(v) => {
+                if v >= 0 {
+                    Ok(v as u64)
+                } else {
+                    Err(InvalidMetadataValue::from("value is negative"))
+                }
+            }
             _ => Err(InvalidMetadataValue::from(
-                "expected MetadataValue::UnsignedInt",
+                "expected MetadataValue::SignedInt or MetadataValue::UnsignedInt",
             )),
         }
     }
@@ -210,7 +224,18 @@ impl TryFrom<MetadataValue> for String {
     fn try_from(value: MetadataValue) -> Result<Self, Self::Error> {
         match value {
             MetadataValue::String(v) => Ok(v),
-            _ => Err(InvalidMetadataValue::from("expected MetadataValue::String")),
+            MetadataValue::Strings(mut v) => {
+                if v.len() == 1 {
+                    Ok(v.pop().unwrap())
+                } else {
+                    Err(InvalidMetadataValue::from(
+                        "MetadataValue::Strings contains more than 1 String",
+                    ))
+                }
+            }
+            _ => Err(InvalidMetadataValue::from(
+                "expected MetadataValue::Strings or MetadataValue::String",
+            )),
         }
     }
 }
@@ -229,35 +254,58 @@ impl TryFrom<MetadataValue> for Vec<String> {
     }
 }
 
-#[test]
-fn test_signed_integer_casting() {
-    assert_eq!(MetadataValue::SignedInt(42).into_i64(), Some(42));
-    assert_eq!(MetadataValue::SignedInt(-42).into_i64(), Some(-42));
-    assert_eq!(MetadataValue::UnsignedInt(42).into_i64(), Some(42));
-    assert_eq!(MetadataValue::Boolean(true).into_i64(), None);
+#[cfg(test)]
+mod metadata_value_integer_tests {
+    use super::*;
 
-    assert_eq!(
-        MetadataValue::UnsignedInt(u64::MAX).into_i64(),
-        Some(i64::MAX)
-    );
-}
+    #[test]
+    fn test_signed_integer_casting() {
+        assert_eq!(
+            MetadataValue::SignedInt(i64::MIN).into_i64(),
+            Some(i64::MIN)
+        );
+        assert_eq!(MetadataValue::SignedInt(0).into_i64(), Some(0_i64));
+        assert_eq!(
+            MetadataValue::SignedInt(i64::MAX).into_i64(),
+            Some(i64::MAX)
+        );
+        assert_eq!(MetadataValue::UnsignedInt(0).into_i64(), Some(0_i64));
+        assert_eq!(
+            MetadataValue::UnsignedInt(u64::MAX).into_i64(),
+            Some(i64::MAX)
+        );
 
-#[test]
-fn test_unsigned_integer_casting() {
-    assert_eq!(MetadataValue::SignedInt(42).into_u64(), Some(42));
-    assert_eq!(MetadataValue::SignedInt(-42).into_u64(), Some(0));
-    assert_eq!(MetadataValue::UnsignedInt(42).into_u64(), Some(42));
-    assert_eq!(MetadataValue::Boolean(true).into_u64(), None);
+        assert_eq!(MetadataValue::SignedInt(i64::MIN).try_into(), Ok(i64::MIN));
+        assert_eq!(MetadataValue::SignedInt(0_i64).try_into(), Ok(0_i64));
+        assert_eq!(MetadataValue::SignedInt(i64::MAX).try_into(), Ok(i64::MAX));
+        assert_eq!(MetadataValue::UnsignedInt(0).try_into(), Ok(0_i64));
+        assert!(i64::try_from(MetadataValue::UnsignedInt(u64::MAX)).is_err());
+    }
 
-    assert_eq!(
-        MetadataValue::SignedInt(i64::MAX).into_u64(),
-        Some(i64::MAX as u64)
-    );
+    #[test]
+    fn test_unsigned_integer_casting() {
+        assert_eq!(MetadataValue::SignedInt(i64::MIN).into_u64(), Some(0_u64));
+        assert_eq!(MetadataValue::SignedInt(0).into_u64(), Some(0_u64));
+        assert_eq!(
+            MetadataValue::SignedInt(i64::MAX).into_u64(),
+            Some(i64::MAX as u64)
+        );
+        assert_eq!(MetadataValue::UnsignedInt(0).into_u64(), Some(0_u64));
+        assert_eq!(
+            MetadataValue::UnsignedInt(u64::MAX).into_u64(),
+            Some(u64::MAX)
+        );
 
-    assert_eq!(MetadataValue::SignedInt(i64::MIN).into_u64(), Some(0));
-
-    assert_eq!(
-        MetadataValue::UnsignedInt(u64::MAX).into_u64(),
-        Some(u64::MAX)
-    );
+        assert!(u64::try_from(MetadataValue::SignedInt(i64::MIN)).is_err());
+        assert_eq!(MetadataValue::SignedInt(0).try_into(), Ok(0_u64));
+        assert_eq!(
+            MetadataValue::SignedInt(i64::MAX).try_into(),
+            Ok(i64::MAX as u64)
+        );
+        assert_eq!(MetadataValue::UnsignedInt(0).try_into(), Ok(0_u64));
+        assert_eq!(
+            MetadataValue::UnsignedInt(u64::MAX).try_into(),
+            Ok(u64::MAX)
+        );
+    }
 }
