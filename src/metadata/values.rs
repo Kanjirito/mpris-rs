@@ -21,16 +21,9 @@ pub enum MetadataValue {
 }
 
 impl MetadataValue {
-    pub fn into_string(self) -> Option<String> {
-        if let MetadataValue::String(s) = self {
-            Some(s)
-        } else {
-            None
-        }
-    }
-
     pub fn into_nonempty_string(self) -> Option<String> {
-        self.into_string()
+        String::try_from(self)
+            .ok()
             .and_then(|s| if s.is_empty() { None } else { Some(s) })
     }
 
@@ -47,22 +40,6 @@ impl MetadataValue {
             MetadataValue::SignedInt(i) if i < 0 => Some(0),
             MetadataValue::SignedInt(i) => Some(i as u64),
             MetadataValue::UnsignedInt(i) => Some(i),
-            _ => None,
-        }
-    }
-
-    pub fn into_float(self) -> Option<f64> {
-        if let MetadataValue::Float(f) = self {
-            Some(f)
-        } else {
-            None
-        }
-    }
-
-    pub fn into_strings(self) -> Option<Vec<String>> {
-        match self {
-            MetadataValue::Strings(v) => Some(v),
-            MetadataValue::String(s) => Some(vec![s]),
             _ => None,
         }
     }
