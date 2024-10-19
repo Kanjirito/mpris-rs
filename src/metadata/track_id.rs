@@ -30,7 +30,7 @@ impl TrackID {
         self.0.as_str()
     }
 
-    pub(crate) fn get_object_path(&self) -> ObjectPath {
+    pub fn get_object_path(&self) -> ObjectPath {
         // Safe because we checked the string at creation
         ObjectPath::from_str_unchecked(&self.0)
     }
@@ -165,6 +165,35 @@ impl From<TrackID> for OwnedObjectPath {
 impl From<TrackID> for String {
     fn from(value: TrackID) -> Self {
         value.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_track() {
+        let track = TrackID::no_track();
+        let manual = TrackID(NO_TRACK.into());
+
+        assert!(track.is_no_track());
+        assert!(manual.is_no_track());
+        assert_eq!(track, manual);
+    }
+
+    #[test]
+    fn valid_track_id() {
+        assert!(TrackID::try_from("/").is_ok());
+        assert!(TrackID::try_from("/some/path").is_ok());
+    }
+
+    #[test]
+    fn invalid_track_id() {
+        assert!(TrackID::try_from("").is_err());
+        assert!(TrackID::try_from("//some/path").is_err());
+        assert!(TrackID::try_from("/some.path").is_err());
+        assert!(TrackID::try_from("path").is_err());
     }
 }
 
