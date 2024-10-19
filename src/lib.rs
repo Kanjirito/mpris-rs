@@ -20,7 +20,7 @@ use errors::*;
 use crate::proxies::DBusProxy;
 pub use duration::MprisDuration;
 pub use errors::MprisError;
-pub use metadata::{Metadata, TrackID};
+pub use metadata::{Metadata, MetadataIter, MetadataValue, TrackID};
 pub use player::Player;
 
 pub(crate) const MPRIS2_PREFIX: &str = "org.mpris.MediaPlayer2.";

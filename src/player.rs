@@ -36,7 +36,7 @@ impl Player {
     }
 
     pub async fn metadata(&self) -> Result<Metadata, MprisError> {
-        Ok(self.raw_metadata().await?.into())
+        Ok(self.raw_metadata().await?.try_into()?)
     }
 
     pub async fn raw_metadata(&self) -> Result<HashMap<String, MetadataValue>, MprisError> {
