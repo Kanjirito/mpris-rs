@@ -13,6 +13,7 @@ mod duration;
 pub mod errors;
 mod metadata;
 mod player;
+mod playlist;
 mod proxies;
 
 use errors::*;
@@ -22,10 +23,11 @@ pub use duration::MprisDuration;
 pub use errors::MprisError;
 pub use metadata::{Metadata, MetadataIter, MetadataValue, TrackID};
 pub use player::Player;
+pub use playlist::{Playlist, PlaylistOrdering};
 
 pub(crate) const MPRIS2_PREFIX: &str = "org.mpris.MediaPlayer2.";
 
-type PlayerFuture = Pin<Box<dyn Future<Output = Result<Player, MprisError>> + Send + Sync>>;
+type PlayerFuture = Pin<Box<dyn Future<Output = Result<Player, MprisError>> + Send>>;
 
 pub struct Mpris {
     connection: Connection,
@@ -177,7 +179,7 @@ impl FusedStream for PlayerStream {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 /// The [`Player`]'s playback status
 ///
 /// See: [MPRIS2 specification about `PlaybackStatus`][playback_status]

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use zbus::proxy;
-use zbus::zvariant::Value;
+use zbus::zvariant::{ObjectPath, OwnedObjectPath, Value};
 
 #[proxy(
     default_service = "org.freedesktop.DBus",
@@ -98,11 +98,7 @@ pub(crate) trait Player {
     fn seek(&self, offset: i64) -> zbus::Result<()>;
 
     /// SetPosition method
-    fn set_position(
-        &self,
-        track_id: &zbus::zvariant::ObjectPath<'_>,
-        position: i64,
-    ) -> zbus::Result<()>;
+    fn set_position(&self, track_id: &ObjectPath<'_>, position: i64) -> zbus::Result<()>;
 
     /// Stop method
     fn stop(&self) -> zbus::Result<()>;
@@ -185,4 +181,38 @@ pub(crate) trait Player {
 
     #[zbus(property)]
     fn set_volume(&self, value: f64) -> zbus::Result<()>;
+}
+
+#[proxy(
+    interface = "org.mpris.MediaPlayer2.Playlists",
+    default_path = "/org/mpris/MediaPlayer2",
+    gen_blocking = false
+)]
+pub(crate) trait Playlists {
+    /// ActivatePlaylist method
+    fn activate_playlist(&self, playlist_id: &ObjectPath<'_>) -> zbus::Result<()>;
+
+    /// GetPlaylists method
+    fn get_playlists(
+        &self,
+        index: u32,
+        max_count: u32,
+        order: &str,
+        reverse_order: bool,
+    ) -> zbus::Result<Vec<(OwnedObjectPath, String, String)>>;
+
+    #[zbus(signal)]
+    fn playlist_changed(&self) -> zbus::Result<Vec<(OwnedObjectPath, String, String)>>;
+
+    /// ActivePlaylist property
+    #[zbus(property)]
+    fn active_playlist(&self) -> zbus::Result<(bool, (OwnedObjectPath, String, String))>;
+
+    /// Orderings property
+    #[zbus(property)]
+    fn orderings(&self) -> zbus::Result<Vec<String>>;
+
+    /// PlaylistCount property
+    #[zbus(property)]
+    fn playlist_count(&self) -> zbus::Result<u32>;
 }

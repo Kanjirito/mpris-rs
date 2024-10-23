@@ -31,6 +31,12 @@ pub struct InvalidMetadataValue(pub(crate) String);
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct InvalidMetadata(pub(crate) String);
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct InvalidPlaylist(pub(crate) String);
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct InvalidPlaylistOrdering(pub(crate) String);
+
 macro_rules! impl_display {
     ($error:ty) => {
         impl Display for $error {
@@ -59,6 +65,8 @@ impl_display!(InvalidTrackID);
 impl_display!(InvalidMprisDuration);
 impl_display!(InvalidMetadataValue);
 impl_display!(InvalidMetadata);
+impl_display!(InvalidPlaylist);
+impl_display!(InvalidPlaylistOrdering);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum MprisError {
@@ -69,13 +77,19 @@ pub enum MprisError {
     /// This means that the [`Player`][crate::Player] replied with unexpected data.
     ParseError(String),
 
+    /// The player doesn't implement the required interface/method/signal
+    Unsupported,
+
     /// Some other unexpected error occurred.
     Miscellaneous(String),
 }
 
 impl From<zbus::Error> for MprisError {
     fn from(value: zbus::Error) -> Self {
-        MprisError::DbusError(value)
+        match value {
+            zbus::Error::InterfaceNotFound | zbus::Error::Unsupported => Self::Unsupported,
+            _ => todo!(),
+        }
     }
 }
 
@@ -105,6 +119,18 @@ impl From<InvalidMprisDuration> for MprisError {
 
 impl From<InvalidMetadata> for MprisError {
     fn from(value: InvalidMetadata) -> Self {
+        Self::ParseError(value.0)
+    }
+}
+
+impl From<InvalidPlaylistOrdering> for MprisError {
+    fn from(value: InvalidPlaylistOrdering) -> Self {
+        Self::ParseError(value.0)
+    }
+}
+
+impl From<InvalidPlaylist> for MprisError {
+    fn from(value: InvalidPlaylist) -> Self {
         Self::ParseError(value.0)
     }
 }

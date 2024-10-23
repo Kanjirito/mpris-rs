@@ -1,18 +1,20 @@
 use std::collections::HashMap;
 
-use futures_util::join;
+use futures_util::try_join;
 use zbus::{names::BusName, Connection};
 
 use crate::{
     metadata::MetadataValue,
-    proxies::{MediaPlayer2Proxy, PlayerProxy},
-    LoopStatus, Metadata, Mpris, MprisDuration, MprisError, PlaybackStatus, TrackID, MPRIS2_PREFIX,
+    proxies::{MediaPlayer2Proxy, PlayerProxy, PlaylistsProxy},
+    LoopStatus, Metadata, Mpris, MprisDuration, MprisError, PlaybackStatus, Playlist,
+    PlaylistOrdering, TrackID, MPRIS2_PREFIX,
 };
 
 pub struct Player {
     bus_name: BusName<'static>,
     mp2_proxy: MediaPlayer2Proxy<'static>,
     player_proxy: PlayerProxy<'static>,
+    playlist_proxy: Option<PlaylistsProxy<'static>>,
 }
 
 impl Player {
@@ -24,15 +26,27 @@ impl Player {
         connection: Connection,
         bus_name: BusName<'static>,
     ) -> Result<Player, MprisError> {
-        let (mp2_proxy, player_proxy) = join!(
+        let (mp2_proxy, player_proxy, playlist_proxy) = try_join!(
             MediaPlayer2Proxy::new(&connection, bus_name.clone()),
-            PlayerProxy::new(&connection, bus_name.clone())
-        );
+            PlayerProxy::new(&connection, bus_name.clone()),
+            PlaylistsProxy::new(&connection, bus_name.clone()),
+        )?;
+
+        let playlist = playlist_proxy.playlist_count().await.is_ok();
         Ok(Player {
             bus_name,
-            mp2_proxy: mp2_proxy?,
-            player_proxy: player_proxy?,
+            mp2_proxy,
+            player_proxy,
+            playlist_proxy: if playlist { Some(playlist_proxy) } else { None },
         })
+    }
+
+    pub async fn supports_track_list(&self) -> Result<bool, MprisError> {
+        Ok(self.mp2_proxy.has_track_list().await?)
+    }
+
+    pub fn supports_playlist_interface(&self) -> bool {
+        self.playlist_proxy.is_some()
     }
 
     pub async fn metadata(&self) -> Result<Metadata, MprisError> {
@@ -89,10 +103,6 @@ impl Player {
 
     pub async fn desktop_entry(&self) -> Result<String, MprisError> {
         Ok(self.mp2_proxy.desktop_entry().await?)
-    }
-
-    pub async fn supports_track_list(&self) -> Result<bool, MprisError> {
-        Ok(self.mp2_proxy.has_track_list().await?)
     }
 
     pub async fn identity(&self) -> Result<String, MprisError> {
@@ -236,12 +246,65 @@ impl Player {
     pub async fn set_volume(&self, volume: f64) -> Result<(), MprisError> {
         Ok(self.player_proxy.set_volume(volume).await?)
     }
+
+    fn check_playlist_support(&self) -> Result<&PlaylistsProxy, MprisError> {
+        match &self.playlist_proxy {
+            Some(proxy) => Ok(proxy),
+            None => Err(MprisError::Unsupported),
+        }
+    }
+
+    pub async fn activate_playlist(&self, playlist: &Playlist) -> Result<(), MprisError> {
+        Ok(self
+            .check_playlist_support()?
+            .activate_playlist(&playlist.get_id())
+            .await?)
+    }
+
+    pub async fn get_playlists(
+        &self,
+        start_index: u32,
+        max_count: u32,
+        order: PlaylistOrdering,
+        reverse_order: bool,
+    ) -> Result<Vec<Playlist>, MprisError> {
+        Ok(self
+            .check_playlist_support()?
+            .get_playlists(start_index, max_count, order.as_str_value(), reverse_order)
+            .await?
+            .into_iter()
+            .map(Playlist::from)
+            .collect())
+    }
+
+    pub async fn active_playlist(&self) -> Result<Option<Playlist>, MprisError> {
+        let result = self.check_playlist_support()?.active_playlist().await?;
+        if result.0 {
+            Ok(Some(Playlist::from(result.1)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn orderings(&self) -> Result<Vec<PlaylistOrdering>, MprisError> {
+        let result = self.check_playlist_support()?.orderings().await?;
+        let mut orderings = Vec::with_capacity(result.len());
+        for s in result {
+            orderings.push(s.parse()?);
+        }
+        Ok(orderings)
+    }
+
+    pub async fn playlist_count(&self) -> Result<u32, MprisError> {
+        Ok(self.check_playlist_support()?.playlist_count().await?)
+    }
 }
 
 impl std::fmt::Debug for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Player")
             .field("bus_name", &self.bus_name())
+            .field("playlist_proxy", &self.playlist_proxy.is_some())
             .finish()
     }
 }
