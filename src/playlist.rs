@@ -187,7 +187,6 @@ mod playlist_ordering_tests {
         assert_eq!(&PlaylistOrdering::CreationDate.to_string(), "CreationDate");
         assert_eq!(&PlaylistOrdering::LastPlayDate.to_string(), "LastPlayDate");
         assert_eq!(&PlaylistOrdering::UserDefined.to_string(), "UserDefined");
-
     }
 }
 
